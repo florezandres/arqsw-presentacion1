@@ -16,6 +16,9 @@ type Config struct {
 	GRPC struct {
 		Port string
 	}
+	HTTP struct {
+		Port string
+	}
 }
 
 func Load() *Config {
@@ -36,6 +39,11 @@ func Load() *Config {
 			Port string
 		}{
 			Port: os.Getenv("GRPC_PORT"),
+		},
+		HTTP: struct {
+			Port string
+		}{
+			Port: os.Getenv("HTTP_PORT"),
 		},
 	}
 }
