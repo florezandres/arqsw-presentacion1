@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package sales;
+option go_package = "Taller2/Sales/gen/go/api"; // Ruta COMPLETA desde el módulo
+
+import "google/api/annotations.proto";
+
+// Servicio para Ventas
+service SalesService {
+  // Command
+  rpc CreateSale (CreateSaleRequest) returns (CreateSaleResponse) {
+    option (google.api.http) = {
+      post: "/v1/sales"
+      body: "*"
+    };
+  }
+
+  rpc UpdateSale (UpdateSaleRequest) returns (UpdateSaleResponse) {
+    option (google.api.http) = {
+      put: "/v1/sales/{id}"
+      body: "*"
+    };
+  }
+
+  rpc DeleteSale (DeleteSaleRequest) returns (DeleteSaleResponse) {
+    option (google.api.http) = {
+      delete: "/v1/sales/{id}"
+    };
+  }
+
+  // Query
+  rpc GetSale (GetSaleRequest) returns (GetSaleResponse) {
+    option (google.api.http) = {
+      get: "/v1/sales/{id}"
+    };
+  }
+
+  rpc ListSales (ListSalesRequest) returns (ListSalesResponse) {
+    option (google.api.http) = {
+      get: "/v1/sales"
+    };
+  }
+}
+
+// Mensajes
+
+// Sale (Venta) estructura
+message Sale {
+  string id = 1;
+  string product_id = 2; // ID del producto de la venta
+  int32 quantity = 3;    // Cantidad de productos vendidos
+  double total_price = 4; // Precio total de la venta
+  string sale_date = 5;   // Fecha de la venta
+}
+
+// Command requests/responses...
+// Command messages para ventas
+
+message CreateSaleRequest {
+  string product_id = 1; // ID del producto
+  int32 quantity = 2;    // Cantidad de productos vendidos
+}
+
+message CreateSaleResponse {
+  string sale_id = 1; // ID de la venta creada
+}
+
+message UpdateSaleRequest {
+  string id = 1;     // ID de la venta a actualizar
+  string product_id = 2; // ID del producto
+  int32 quantity = 3;    // Cantidad de productos vendidos
+  double total_price = 4; // Precio total de la venta
+}
+
+message UpdateSaleResponse {
+  bool success = 1; // Indica si la actualización fue exitosa
+}
+
+message DeleteSaleRequest {
+  string id = 1; // ID de la venta a eliminar
+}
+
+message DeleteSaleResponse {
+  bool success = 1; // Indica si la eliminación fue exitosa
+}
+
+// Query messages
+
+message GetSaleRequest {
+  string id = 1; // ID de la venta a obtener
+}
+
+message GetSaleResponse {
+  Sale sale = 1; // Detalles de la venta
+}
+
+message ListSalesRequest {
+  int32 page = 1;   // Número de página para la paginación
+  int32 limit = 2;  // Límite de resultados por página
+}
+
+message ListSalesResponse {
+  repeated Sale sales = 1; // Lista de ventas
+  int32 total = 2;  // Total de ventas
+}

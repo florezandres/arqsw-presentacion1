@@ -1,6 +1,5 @@
 package query
 
-//EL PROBLEMA ES QUE ESTA VAINA SE LLAMA ES APP NO DOC JAJA
 import (
 	handlers "Taller2/Product/internal/query/application/handlers"
 	repositories "Taller2/Product/internal/query/domain/repositories"
