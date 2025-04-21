@@ -2,6 +2,7 @@ package entities
 
 import (
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -11,10 +12,10 @@ type Sale struct {
 	ProductID  string
 	Quantity   int
 	TotalPrice float64
-	SaleDate   string
+	SaleDate   time.Time
 }
 
-func NewSale(productID string, quantity int, totalPrice float64, saleDate string) (*Sale, error) {
+func NewSale(productID string, quantity int, totalPrice float64, saleDate time.Time) (*Sale, error) {
 	if productID == "" {
 		return nil, errors.New("productID cannot be empty")
 	}
@@ -24,8 +25,8 @@ func NewSale(productID string, quantity int, totalPrice float64, saleDate string
 	if totalPrice <= 0 {
 		return nil, errors.New("totalPrice must be positive")
 	}
-	if saleDate == "" {
-		return nil, errors.New("saleDate cannot be empty")
+	if saleDate.IsZero() {
+		return nil, errors.New("saleDate cannot be zero")
 	}
 
 	return &Sale{

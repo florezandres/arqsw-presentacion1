@@ -1,72 +1,105 @@
 package persistence
 
 import (
-	domain "Taller2/Sale/internal/query/domain/models"
+	"Taller2/Sale/internal/query/domain/models"
+	"context"
 	"database/sql"
 	"errors"
-	"time"
 )
+
+type SaleRead struct {
+	ID        string
+	ProductID string
+	Quantity  int32
+	Date      string
+}
 
 type SQLiteSaleReadRepository struct {
 	db *sql.DB
+}
+
+func (r *SQLiteSaleReadRepository) FindByID(ctx context.Context, id string) (*models.SaleRead, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *SQLiteSaleReadRepository) ListAll(ctx context.Context) ([]*models.SaleRead, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *SQLiteSaleReadRepository) Save(ctx context.Context, sale *models.SaleRead) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *SQLiteSaleReadRepository) ListWithPagination(ctx context.Context, limit, offset int) ([]*models.SaleRead, int, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func NewSQLiteSaleReadRepository(db *sql.DB) *SQLiteSaleReadRepository {
 	return &SQLiteSaleReadRepository{db: db}
 }
 
-func (r *SQLiteSaleReadRepository) Create(sale map[string]interface{}) error {
-	saleDate, err := time.Parse(time.RFC3339, sale["sale_date"].(string))
-	if err != nil {
-		return err
-	}
-
-	_, err = r.db.Exec(`
-		INSERT INTO sales (id, product_id, quantity, total_price, sale_date) 
-		VALUES (?, ?, ?, ?, ?)`,
-		sale["id"],
-		sale["product_id"],
-		sale["quantity"],
-		sale["total_price"],
-		saleDate,
+func (r *SQLiteSaleReadRepository) Create(ctx context.Context, sale *models.SaleRead) error {
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO sales (id, product_id, quantity, date) 
+		VALUES (?, ?, ?, ?)`,
+		sale.ID,
+		sale.ProductID,
+		sale.Quantity,
+		sale.Date,
 	)
 	return err
 }
 
-func (r *SQLiteSaleReadRepository) Update(sale map[string]interface{}) error {
-	saleDate, err := time.Parse(time.RFC3339, sale["sale_date"].(string))
-	if err != nil {
-		return err
-	}
-
-	_, err = r.db.Exec(`
+func (r *SQLiteSaleReadRepository) Update(ctx context.Context, sale *models.SaleRead) error {
+	result, err := r.db.ExecContext(ctx, `
 		UPDATE sales 
-		SET product_id = ?, quantity = ?, total_price = ?, sale_date = ?
+		SET product_id = ?, quantity = ?, date = ?
 		WHERE id = ?`,
-		sale["product_id"],
-		sale["quantity"],
-		sale["total_price"],
-		saleDate,
-		sale["id"],
+		sale.ProductID,
+		sale.Quantity,
+		sale.Date,
+		sale.ID,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("sale not found")
+	}
+
+	return nil
 }
 
-func (r *SQLiteSaleReadRepository) Delete(id string) error {
-	_, err := r.db.Exec("DELETE FROM sales WHERE id = ?", id)
-	return err
+func (r *SQLiteSaleReadRepository) Delete(ctx context.Context, id string) error {
+	result, err := r.db.ExecContext(ctx, "DELETE FROM sales WHERE id = ?", id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("sale not found")
+	}
+
+	return nil
 }
 
-func (r *SQLiteSaleReadRepository) GetByID(id string) (*domain.SaleRead, error) {
-	row := r.db.QueryRow("SELECT id, product_id, quantity, total_price, sale_date FROM sales WHERE id = ?", id)
+func (r *SQLiteSaleReadRepository) GetByID(ctx context.Context, id string) (*SaleRead, error) {
+	row := r.db.QueryRowContext(ctx,
+		"SELECT id, product_id, quantity, date FROM sales WHERE id = ?", id)
 
-	var sale domain.SaleRead
-	var saleDateStr string
+	var sale SaleRead
 	err := row.Scan(
 		&sale.ID,
 		&sale.ProductID,
 		&sale.Quantity,
-		&saleDateStr,
+		&sale.Date,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -78,21 +111,21 @@ func (r *SQLiteSaleReadRepository) GetByID(id string) (*domain.SaleRead, error) 
 	return &sale, nil
 }
 
-func (r *SQLiteSaleReadRepository) List(page, limit int) ([]*domain.SaleRead, int, error) {
+func (r *SQLiteSaleReadRepository) List(ctx context.Context, page, limit int) ([]*SaleRead, int, error) {
 	offset := (page - 1) * limit
 
 	// Get total count
 	var total int
-	err := r.db.QueryRow("SELECT COUNT(*) FROM sales").Scan(&total)
+	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM sales").Scan(&total)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	// Get paginated results
-	rows, err := r.db.Query(`
-		SELECT id, product_id, quantity, total_price, sale_date 
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT id, product_id, quantity, date 
 		FROM sales 
-		ORDER BY sale_date DESC 
+		ORDER BY date DESC 
 		LIMIT ? OFFSET ?`,
 		limit, offset,
 	)
@@ -101,15 +134,14 @@ func (r *SQLiteSaleReadRepository) List(page, limit int) ([]*domain.SaleRead, in
 	}
 	defer rows.Close()
 
-	var sales []*domain.SaleRead
+	var sales []*SaleRead
 	for rows.Next() {
-		var sale domain.SaleRead
-		var saleDateStr string
+		var sale SaleRead
 		err := rows.Scan(
 			&sale.ID,
 			&sale.ProductID,
 			&sale.Quantity,
-			&saleDateStr,
+			&sale.Date,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -127,8 +159,7 @@ func RunSQLiteMigrations(db *sql.DB) error {
 			id TEXT PRIMARY KEY,
 			product_id TEXT NOT NULL,
 			quantity INTEGER NOT NULL,
-			total_price REAL NOT NULL,
-			sale_date TEXT NOT NULL
+			date TEXT NOT NULL
 		)`)
 	return err
 }
