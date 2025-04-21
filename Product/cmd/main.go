@@ -23,6 +23,22 @@ import (
 	_ "github.com/lib/pq"
 )
 
+func allowCORS(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4321")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Soporte para preflight
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		h.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	// Cargar archivo .env
 	err := godotenv.Load()
@@ -93,9 +109,11 @@ func main() {
 			log.Fatalf("Error iniciando gRPC-Gateway: %v", err)
 		}
 
+		corsHandler := allowCORS(mux)
+
 		// Servir el tráfico HTTP en el puerto configurado
 		log.Printf("gRPC-Gateway REST escuchando en %s", cfg.HTTP.Port)
-		if err := http.ListenAndServe(":"+cfg.HTTP.Port, mux); err != nil {
+		if err := http.ListenAndServe(":"+cfg.HTTP.Port, corsHandler); err != nil {
 			log.Fatalf("Fallo servidor HTTP: %v", err)
 		}
 	}()
